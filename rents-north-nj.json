@@ -19,7 +19,10 @@
       "1": { "Single-Family": 1750, "Condo": 1650, "2-Family": 1700, "3-Family": 1650, "4-Family": 1600 },
       "2": { "Single-Family": 2350, "Condo": 2150, "2-Family": 2300, "3-Family": 2250, "4-Family": 2200 },
       "3": { "Single-Family": 3150, "Condo": 2950, "2-Family": 3100, "3-Family": 3050, "4-Family": 3000 }
-    }
+    },
+    "1": { "Single-Family": 1788, "Condo": 1688, "2-Family": 1738, "3-Family": 1688, "4-Family": 1638 },
+    "2": { "Single-Family": 2412, "Condo": 2212, "2-Family": 2362, "3-Family": 2312, "4-Family": 2262 },
+    "3": { "Single-Family": 3212, "Condo": 3012, "2-Family": 3162, "3-Family": 3112, "4-Family": 3062 }
   },
   "Hudson": {
     "Jersey City": {
