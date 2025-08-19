@@ -1,0 +1,27 @@
+name: Update rents dataset
+
+on:
+  schedule:
+    # Runs monthly on the first day at 6:00 UTC
+    - cron: '0 6 1 * *'
+  workflow_dispatch:
+
+jobs:
+  update-rents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      - name: Update rents file
+        run: |
+          echo "Updating rents-north-nj.json with latest data..."
+          # Placeholder: replace this with a script or API call that fetches new rent medians.
+          # For example, fetch from a Google Sheet, internal API or a CSV file.
+          # In this example we simply touch the file to update its timestamp.
+          touch data/rents-north-nj.json
+      - name: Commit and push changes
+        uses: EndBug/add-and-commit@v9
+        with:
+          author_name: Rent Bot
+          author_email: rent-bot@example.com
+          message: 'chore: update rents dataset'
