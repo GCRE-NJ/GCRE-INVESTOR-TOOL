@@ -164,7 +164,8 @@
          on the body element. The text updates based on the current state. -->
     <button id="darkModeToggle" style="margin-left: 0.5rem;">Dark mode</button>
   </header>
-  <div id="signin-container">
+  <!-- Hide the Google sign-in UI since we no longer require login -->
+  <div id="signin-container" style="display:none;">
     <div id="g_id_onload"
          data-client_id="YOUR_GOOGLE_CLIENT_ID"
          data-callback="handleCredentialResponse"
@@ -279,6 +280,16 @@
           <label for="management" style="flex: 1;">Management&nbsp;%</label>
           <input type="number" id="management" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
         </div>
+        <!-- ROI target selection. Users can choose a conservative, target or aggressive
+             return on investment scenario. Selecting the aggressive option will
+             display a disclaimer below. -->
+        <label style="margin-top:0.5rem;">ROI Target</label>
+        <div id="roiOptions" style="margin-bottom:0.5rem;">
+          <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="conservative" checked> Conservative</label>
+          <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="target"> Target</label>
+          <label><input type="radio" name="roiLevel" value="aggressive"> Aggressive</label>
+          <span id="roiDisclaimer" class="hidden" style="display:block;margin-top:0.25rem;font-size:0.8rem;color:var(--text);">Vacancy may be higher with aggressive ROI targets.</span>
+        </div>
       </div>
       <button id="estimateBtn" class="action">Estimate Rent</button>
     </div>
@@ -286,7 +297,7 @@
     <div class="card results hidden" id="estimateCard">
       <h2>Rent Estimate</h2>
       <div id="estimateResults"></div>
-      <button id="saveAnalysis" class="action hidden">Save Analysis</button>
+      <!-- Removed save analysis feature since login is no longer required -->
     </div>
     <!-- Pro-Forma card -->
     <div class="card results hidden" id="proFormaCard">
@@ -294,9 +305,18 @@
       <div id="proFormaResults"></div>
     </div>
     <!-- Why card -->
-    <div class="card results hidden" id="whyCard">
-      <h2>Why these numbers?</h2>
-      <div id="whyDetails"></div>
+    <!-- Call to action card replacing the "Why these numbers?" explanation. This section
+         invites the user to schedule a consultation by selecting a date and
+         providing their email. -->
+    <div class="card results hidden" id="ctaCard">
+      <h2>Schedule a Consultation</h2>
+      <p>Please choose a date and provide your email to schedule a consultation.</p>
+      <label for="consultDate">Date</label>
+      <input type="date" id="consultDate" />
+      <label for="consultEmail">Email</label>
+      <input type="email" id="consultEmail" placeholder="you@example.com" />
+      <button id="consultBtn" class="action">Submit</button>
+      <p id="consultMessage" class="note" style="margin-top:0.5rem;"></p>
     </div>
     <!-- Saved analyses card -->
     <div class="card results hidden" id="savedCard">
@@ -548,7 +568,14 @@
         return;
       }
       const opts = { wd, parking, utilities, renovation, pets, backyard, transit, basement };
-      const { adjusted, breakdown } = applyAdjustments(baseRent, opts);
+      // Apply adjustments to the baseline rent. Cap the adjusted rent to
+      // a maximum of 15% above the baseline to prevent excessive impact.
+      let { adjusted, breakdown } = applyAdjustments(baseRent, opts);
+      const maxAdjusted = baseRent * 1.15;
+      if (adjusted > maxAdjusted) {
+        adjusted = maxAdjusted;
+        breakdown.push('capped at 15% increase');
+      }
       const low = adjusted * CONFIG.band.low;
       const high = adjusted * CONFIG.band.high;
       const resultsEl = document.getElementById('estimateResults');
@@ -577,22 +604,13 @@
         proHTML += `<tr><th><strong>Cap rate</strong></th><td><strong>${(pro.cap * 100).toFixed(2)}%</strong></td></tr>`;
       }
       proHTML += '</table>';
-      // Display results
+      // Display result cards and scroll to the results. Show the consultation card
+      // instead of the "Why these numbers" explanation.
       document.getElementById('estimateCard').classList.remove('hidden');
       document.getElementById('proFormaCard').classList.remove('hidden');
-      document.getElementById('whyCard').classList.remove('hidden');
+      document.getElementById('ctaCard').classList.remove('hidden');
       resultsEl.scrollIntoView({ behavior: 'smooth' });
       document.getElementById('proFormaResults').innerHTML = proHTML;
-      // Why details
-      const whyEl = document.getElementById('whyDetails');
-      const whyList = document.createElement('ul');
-      whyList.style.listStyle = 'disc';
-      whyList.style.paddingLeft = '1.5rem';
-      whyList.innerHTML = breakdown.map(item => `<li>${item}</li>`).join('');
-      whyEl.innerHTML = `<p>Baseline source: ${source}</p>`;
-      if (breakdown.length) {
-        whyEl.appendChild(whyList);
-      }
       // Show save button if user logged in
       const saveBtn = document.getElementById('saveAnalysis');
       if (currentUser) {
@@ -701,11 +719,13 @@
       // Initialise dark mode from saved preference. Update button text accordingly.
       const darkBtn = document.getElementById('darkModeToggle');
       const savedDark = localStorage.getItem('darkMode');
-      if (savedDark === 'true') {
+      // Default to dark mode unless the user has explicitly chosen light mode.
+      if (savedDark === 'false') {
+        document.body.classList.remove('dark');
+        darkBtn.textContent = 'Dark mode';
+      } else {
         document.body.classList.add('dark');
         darkBtn.textContent = 'Light mode';
-      } else {
-        darkBtn.textContent = 'Dark mode';
       }
       darkBtn.addEventListener('click', () => {
         document.body.classList.toggle('dark');
@@ -728,8 +748,37 @@
       });
       document.getElementById('estimateBtn').addEventListener('click', estimateRent);
       document.getElementById('copySummary').addEventListener('click', copySummary);
-      document.getElementById('saveAnalysis').addEventListener('click', saveAnalysis);
-      document.getElementById('signout').addEventListener('click', signOut);
+      // Save analysis and sign out handlers are no longer attached because
+      // the login feature has been removed.  We leave the functions defined
+      // for potential future use but do not register listeners.
+
+      // ROI disclaimer toggling: when the aggressive ROI option is selected
+      // display a disclaimer about higher vacancy. Hide it otherwise.
+      const roiRadios = document.querySelectorAll('input[name="roiLevel"]');
+      const roiDisclaimer = document.getElementById('roiDisclaimer');
+      roiRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+          if (radio.value === 'aggressive' && radio.checked) {
+            roiDisclaimer.classList.remove('hidden');
+          } else {
+            roiDisclaimer.classList.add('hidden');
+          }
+        });
+      });
+      // Consultation form submission: validate inputs and display a message.
+      const consultBtn = document.getElementById('consultBtn');
+      if (consultBtn) {
+        consultBtn.addEventListener('click', () => {
+          const date = document.getElementById('consultDate').value;
+          const email = document.getElementById('consultEmail').value.trim();
+          const msgEl = document.getElementById('consultMessage');
+          if (!date || !email) {
+            msgEl.textContent = 'Please select a date and provide your email.';
+            return;
+          }
+          msgEl.textContent = `Thank you! We will reach out to you soon to confirm your consultation on ${date}.`;
+        });
+      }
     });
   </script>
 </body>
