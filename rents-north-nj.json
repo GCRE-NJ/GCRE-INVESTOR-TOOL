@@ -1,0 +1,105 @@
+{
+  "Bergen": {
+    "Hackensack": {
+      "1": { "Single-Family": 1800, "Condo": 1700, "2-Family": 1750, "3-Family": 1700, "4-Family": 1650 },
+      "2": { "Single-Family": 2400, "Condo": 2200, "2-Family": 2350, "3-Family": 2300, "4-Family": 2250 },
+      "3": { "Single-Family": 3200, "Condo": 3000, "2-Family": 3150, "3-Family": 3100, "4-Family": 3050 }
+    },
+    "Teaneck": {
+      "1": { "Single-Family": 1700, "Condo": 1600, "2-Family": 1650, "3-Family": 1600, "4-Family": 1550 },
+      "2": { "Single-Family": 2300, "Condo": 2100, "2-Family": 2250, "3-Family": 2200, "4-Family": 2150 },
+      "3": { "Single-Family": 3100, "Condo": 2900, "2-Family": 3050, "3-Family": 3000, "4-Family": 2950 }
+    },
+    "Fort Lee": {
+      "1": { "Single-Family": 1900, "Condo": 1800, "2-Family": 1850, "3-Family": 1800, "4-Family": 1750 },
+      "2": { "Single-Family": 2600, "Condo": 2400, "2-Family": 2550, "3-Family": 2500, "4-Family": 2450 },
+      "3": { "Single-Family": 3400, "Condo": 3200, "2-Family": 3350, "3-Family": 3300, "4-Family": 3250 }
+    },
+    "Englewood": {
+      "1": { "Single-Family": 1750, "Condo": 1650, "2-Family": 1700, "3-Family": 1650, "4-Family": 1600 },
+      "2": { "Single-Family": 2350, "Condo": 2150, "2-Family": 2300, "3-Family": 2250, "4-Family": 2200 },
+      "3": { "Single-Family": 3150, "Condo": 2950, "2-Family": 3100, "3-Family": 3050, "4-Family": 3000 }
+    }
+  },
+  "Hudson": {
+    "Jersey City": {
+      "1": { "Single-Family": 2000, "Condo": 1900, "2-Family": 1950, "3-Family": 1900, "4-Family": 1850 },
+      "2": { "Single-Family": 2800, "Condo": 2600, "2-Family": 2750, "3-Family": 2700, "4-Family": 2650 },
+      "3": { "Single-Family": 3600, "Condo": 3400, "2-Family": 3550, "3-Family": 3500, "4-Family": 3450 }
+    },
+    "Hoboken": {
+      "1": { "Single-Family": 2200, "Condo": 2100, "2-Family": 2150, "3-Family": 2100, "4-Family": 2050 },
+      "2": { "Single-Family": 3000, "Condo": 2800, "2-Family": 2950, "3-Family": 2900, "4-Family": 2850 },
+      "3": { "Single-Family": 3800, "Condo": 3600, "2-Family": 3750, "3-Family": 3700, "4-Family": 3650 }
+    },
+    "Union City": {
+      "1": { "Single-Family": 1800, "Condo": 1700, "2-Family": 1750, "3-Family": 1700, "4-Family": 1650 },
+      "2": { "Single-Family": 2500, "Condo": 2300, "2-Family": 2450, "3-Family": 2400, "4-Family": 2350 },
+      "3": { "Single-Family": 3300, "Condo": 3100, "2-Family": 3250, "3-Family": 3200, "4-Family": 3150 }
+    },
+    "Bayonne": {
+      "1": { "Single-Family": 1700, "Condo": 1600, "2-Family": 1650, "3-Family": 1600, "4-Family": 1550 },
+      "2": { "Single-Family": 2400, "Condo": 2200, "2-Family": 2350, "3-Family": 2300, "4-Family": 2250 },
+      "3": { "Single-Family": 3200, "Condo": 3000, "2-Family": 3150, "3-Family": 3100, "4-Family": 3050 }
+    },
+    "North Bergen": {
+      "1": { "Single-Family": 1750, "Condo": 1650, "2-Family": 1700, "3-Family": 1650, "4-Family": 1600 },
+      "2": { "Single-Family": 2450, "Condo": 2250, "2-Family": 2400, "3-Family": 2350, "4-Family": 2300 },
+      "3": { "Single-Family": 3250, "Condo": 3050, "2-Family": 3200, "3-Family": 3150, "4-Family": 3100 }
+    }
+  },
+  "Essex": {
+    "Newark": {
+      "1": { "Single-Family": 1600, "Condo": 1500, "2-Family": 1550, "3-Family": 1500, "4-Family": 1450 },
+      "2": { "Single-Family": 2200, "Condo": 2000, "2-Family": 2150, "3-Family": 2100, "4-Family": 2050 },
+      "3": { "Single-Family": 3000, "Condo": 2800, "2-Family": 2950, "3-Family": 2900, "4-Family": 2850 }
+    },
+    "East Orange": {
+      "1": { "Single-Family": 1500, "Condo": 1400, "2-Family": 1450, "3-Family": 1400, "4-Family": 1350 },
+      "2": { "Single-Family": 2100, "Condo": 1900, "2-Family": 2050, "3-Family": 2000, "4-Family": 1950 },
+      "3": { "Single-Family": 2900, "Condo": 2700, "2-Family": 2850, "3-Family": 2800, "4-Family": 2750 }
+    },
+    "Bloomfield": {
+      "1": { "Single-Family": 1700, "Condo": 1600, "2-Family": 1650, "3-Family": 1600, "4-Family": 1550 },
+      "2": { "Single-Family": 2300, "Condo": 2100, "2-Family": 2250, "3-Family": 2200, "4-Family": 2150 },
+      "3": { "Single-Family": 3100, "Condo": 2900, "2-Family": 3050, "3-Family": 3000, "4-Family": 2950 }
+    },
+    "Montclair": {
+      "1": { "Single-Family": 2000, "Condo": 1900, "2-Family": 1950, "3-Family": 1900, "4-Family": 1850 },
+      "2": { "Single-Family": 2700, "Condo": 2500, "2-Family": 2650, "3-Family": 2600, "4-Family": 2550 },
+      "3": { "Single-Family": 3500, "Condo": 3300, "2-Family": 3450, "3-Family": 3400, "4-Family": 3350 }
+    },
+    "West Orange": {
+      "1": { "Single-Family": 1650, "Condo": 1550, "2-Family": 1600, "3-Family": 1550, "4-Family": 1500 },
+      "2": { "Single-Family": 2300, "Condo": 2100, "2-Family": 2250, "3-Family": 2200, "4-Family": 2150 },
+      "3": { "Single-Family": 3100, "Condo": 2900, "2-Family": 3050, "3-Family": 3000, "4-Family": 2950 }
+    }
+  },
+  "Passaic": {
+    "Paterson": {
+      "1": { "Single-Family": 1500, "Condo": 1400, "2-Family": 1450, "3-Family": 1400, "4-Family": 1350 },
+      "2": { "Single-Family": 2100, "Condo": 1900, "2-Family": 2050, "3-Family": 2000, "4-Family": 1950 },
+      "3": { "Single-Family": 2800, "Condo": 2600, "2-Family": 2750, "3-Family": 2700, "4-Family": 2650 }
+    },
+    "Clifton": {
+      "1": { "Single-Family": 1600, "Condo": 1500, "2-Family": 1550, "3-Family": 1500, "4-Family": 1450 },
+      "2": { "Single-Family": 2300, "Condo": 2100, "2-Family": 2250, "3-Family": 2200, "4-Family": 2150 },
+      "3": { "Single-Family": 3100, "Condo": 2900, "2-Family": 3050, "3-Family": 3000, "4-Family": 2950 }
+    },
+    "Passaic": {
+      "1": { "Single-Family": 1500, "Condo": 1400, "2-Family": 1450, "3-Family": 1400, "4-Family": 1350 },
+      "2": { "Single-Family": 2150, "Condo": 1950, "2-Family": 2100, "3-Family": 2050, "4-Family": 2000 },
+      "3": { "Single-Family": 2850, "Condo": 2650, "2-Family": 2800, "3-Family": 2750, "4-Family": 2700 }
+    },
+    "Wayne": {
+      "1": { "Single-Family": 1700, "Condo": 1600, "2-Family": 1650, "3-Family": 1600, "4-Family": 1550 },
+      "2": { "Single-Family": 2400, "Condo": 2200, "2-Family": 2350, "3-Family": 2300, "4-Family": 2250 },
+      "3": { "Single-Family": 3200, "Condo": 3000, "2-Family": 3150, "3-Family": 3100, "4-Family": 3050 }
+    },
+    "Little Falls": {
+      "1": { "Single-Family": 1600, "Condo": 1500, "2-Family": 1550, "3-Family": 1500, "4-Family": 1450 },
+      "2": { "Single-Family": 2300, "Condo": 2100, "2-Family": 2250, "3-Family": 2200, "4-Family": 2150 },
+      "3": { "Single-Family": 3000, "Condo": 2800, "2-Family": 2950, "3-Family": 2900, "4-Family": 2850 }
+    }
+  }
+}
