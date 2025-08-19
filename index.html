@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>North NJ Rent Estimator</title>
+  <!-- Inline CSS for a clean, mobile‑first layout. All values are kept here so that the
+       page can live as a single file. You can tweak colors, spacing or fonts by
+       editing the variables below. -->
+  <style>
+    :root {
+      /* Apple-inspired palette: soft neutrals with a bright accent. */
+      --bg: #F5F5F7;
+      --card-bg: #FFFFFF;
+      --primary: #007AFF;
+      --border: #E5E5EA;
+      --text: #1C1C1E;
+      --radius: 0.75rem;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+      --max-width: 1200px;
+    }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      background: var(--card-bg);
+      padding: 1rem;
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+    #copySummary {
+      padding: 0.5rem 1rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+    }
+    #copySummary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    #signin-container {
+      padding: 1rem;
+      text-align: right;
+    }
+    #user-info {
+      font-size: 0.9rem;
+      margin-top: 0.5rem;
+    }
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      max-width: var(--max-width);
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 1rem;
+      flex: 1 1 100%;
+    }
+    @media (min-width: 900px) {
+      .card.inputs {
+        flex: 1 1 40%;
+      }
+      .card.results {
+        flex: 1 1 55%;
+      }
+    }
+    .card h2 {
+      margin-top: 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    input[type="number"], select, input[type="text"] {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 1rem;
+    }
+    .inline {
+      display: flex;
+      gap: 0.5rem;
+      align-items: center;
+    }
+    .inline input[type="number"] {
+      flex: 1;
+    }
+    button.action {
+      padding: 0.75rem 1rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      width: 100%;
+      margin-top: 0.5rem;
+    }
+    button.action:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .info-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .info-table th, .info-table td {
+      border: 1px solid var(--border);
+      padding: 0.5rem;
+      text-align: left;
+    }
+    .info-table th {
+      background: #f1f1f1;
+    }
+    .hidden {
+      display: none !important;
+    }
+  </style>
+  <!-- Google Identity Services. Replace YOUR_GOOGLE_CLIENT_ID with your own client id
+       from the Google Cloud Console (OAuth). Without a valid client ID the sign in
+       button will not function. -->
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+  <header>
+    <h1>North NJ Rent Estimator</h1>
+    <button id="copySummary" disabled>Copy Summary</button>
+  </header>
+  <div id="signin-container">
+    <div id="g_id_onload"
+         data-client_id="YOUR_GOOGLE_CLIENT_ID"
+         data-callback="handleCredentialResponse"
+         data-auto_prompt="false"></div>
+    <div class="g_id_signin"
+         data-type="standard"
+         data-size="large"></div>
+    <div id="user-info" class="hidden">
+      Signed in as <strong id="user-name"></strong> (<span id="user-email"></span>)
+      <button id="signout" style="margin-left: 0.5rem; padding: 0.25rem 0.5rem;">Sign out</button>
+    </div>
+  </div>
+  <div class="container">
+    <!-- Input card -->
+    <div class="card inputs" id="inputsCard">
+      <h2>Inputs</h2>
+      <label for="county">County</label>
+      <!-- County selector populated from the rents JSON. When a county is selected,
+           the towns dropdown will update accordingly. -->
+      <select id="county">
+        <option value="">Select county</option>
+      </select>
+      <label for="town">Town</label>
+      <!-- Town selector populated based on the selected county. -->
+      <select id="town" disabled>
+        <option value="">Select town</option>
+      </select>
+      <label for="style">Style</label>
+      <select id="style">
+        <option value="Single-Family">Single-Family</option>
+        <option value="Condo">Condo</option>
+        <option value="2-Family">2-Family</option>
+        <option value="3-Family">3-Family</option>
+        <option value="4-Family">4-Family</option>
+      </select>
+      <label for="units">Number of Units (for multi-family)</label>
+      <input type="number" id="units" min="1" max="4" value="1" />
+      <label for="beds">Bedrooms per Unit</label>
+      <input type="number" id="beds" min="0" max="10" value="2" />
+      <label for="baths">Bathrooms per Unit</label>
+      <input type="number" id="baths" min="0" max="10" value="1" />
+      <label for="sqft">Square Footage (optional)</label>
+      <input type="number" id="sqft" min="0" value="" placeholder="e.g. 1200" />
+      <label for="wd">Washer/Dryer</label>
+      <select id="wd">
+        <option value="none">None</option>
+        <option value="shared">Shared</option>
+        <option value="in-unit">In-unit</option>
+      </select>
+      <label for="parking">Parking</label>
+      <select id="parking">
+        <option value="none">None</option>
+        <option value="street">Street</option>
+        <option value="driveway">Driveway</option>
+        <option value="garage">Garage</option>
+      </select>
+      <label for="utilities">Utilities Responsibility</label>
+      <select id="utilities">
+        <option value="tenant">Tenant pays all</option>
+        <option value="split">Split</option>
+        <option value="ll">LL pays all</option>
+      </select>
+      <label for="renovation">Renovation</label>
+      <select id="renovation">
+        <option value="6+ years">6+ years</option>
+        <option value="refresh 5 years">Refresh (≤5 years)</option>
+        <option value="refresh 3 years">Refresh (≤3 years)</option>
+        <option value="gut renovation">Gut renovation (≤3 years)</option>
+        <option value="new construction">New construction</option>
+      </select>
+      <label for="pets">Pets Allowed</label>
+      <select id="pets">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+      <label for="backyard">Backyard</label>
+      <select id="backyard">
+        <option value="none">None</option>
+        <option value="shared">Shared</option>
+        <option value="private">Private</option>
+      </select>
+      <label for="transit">Near Transit</label>
+      <select id="transit">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+      <label for="basement">Finished Basement/Attic</label>
+      <select id="basement">
+        <option value="no">No</option>
+        <option value="yes">Yes</option>
+      </select>
+      <!-- Investor fields -->
+      <label for="price">Purchase Price (optional)</label>
+      <input type="number" id="price" min="0" step="1000" />
+      <label for="taxes">Taxes (monthly, optional)</label>
+      <input type="number" id="taxes" min="0" step="10" />
+      <label for="insurance">Insurance (monthly, optional)</label>
+      <input type="number" id="insurance" min="0" step="10" />
+      <label for="hoa">HOA Fee (monthly, optional)</label>
+      <input type="number" id="hoa" min="0" step="10" />
+      <div class="inline">
+        <label for="vacancy" style="flex: 1;">Vacancy %</label>
+        <input type="number" id="vacancy" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
+      </div>
+      <div class="inline">
+        <label for="maintenance" style="flex: 1;">Maintenance %</label>
+        <input type="number" id="maintenance" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
+      </div>
+      <div class="inline">
+        <label for="management" style="flex: 1;">Management %</label>
+        <input type="number" id="management" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
+      </div>
+      <button id="estimateBtn" class="action">Estimate Rent</button>
+    </div>
+    <!-- Estimate card -->
+    <div class="card results hidden" id="estimateCard">
+      <h2>Rent Estimate</h2>
+      <div id="estimateResults"></div>
+      <button id="saveAnalysis" class="action hidden">Save Analysis</button>
+    </div>
+    <!-- Pro-Forma card -->
+    <div class="card results hidden" id="proFormaCard">
+      <h2>Pro‑Forma</h2>
+      <div id="proFormaResults"></div>
+    </div>
+    <!-- Why card -->
+    <div class="card results hidden" id="whyCard">
+      <h2>Why these numbers?</h2>
+      <div id="whyDetails"></div>
+    </div>
+    <!-- Saved analyses card -->
+    <div class="card results hidden" id="savedCard">
+      <h2>Saved Analyses</h2>
+      <div id="analysisList"></div>
+    </div>
+  </div>
+  <script>
+    // Configuration object containing baseline adjustments. You can tune these values
+    // without changing the logic below. The ranges reflect typical rents in the
+    // North NJ area; adjust accordingly based on market research.
+    const CONFIG = {
+      adjustment: {
+        wd: { 'none': 0, 'shared': 35, 'in-unit': 100 },
+        parking: { 'none': 0, 'street': 0, 'driveway': 75, 'garage': 175 },
+        utilities: { 'tenant': 0, 'split': 75, 'll': 200 },
+        renovation: {
+          '6+ years': 0,
+          'refresh 5 years': 0.02,
+          'refresh 3 years': 0.05,
+          'gut renovation': 0.09,
+          'new construction': 0.12
+        },
+        pets: { 'no': 0, 'yes': 35 },
+        backyard: { 'none': 0, 'shared': 40, 'private': 100 },
+        transit: { 'no': 0, 'yes': 75 },
+        basement: { 'no': 0, 'yes': 75 }
+      },
+      band: { low: 0.95, high: 1.08 }
+    };
+
+    // Data loaded from external rents file
+    let rentsData = {};
+    // Current user info
+    let currentUser = null;
+
+    // Populate county and town selectors once data is loaded
+    async function loadRents() {
+      try {
+        const response = await fetch('data/rents-north-nj.json');
+        rentsData = await response.json();
+        // Populate county options
+        const countySelect = document.getElementById('county');
+        countySelect.innerHTML = '<option value="">Select county</option>';
+        Object.keys(rentsData).sort().forEach(countyName => {
+          const opt = document.createElement('option');
+          opt.value = countyName;
+          opt.textContent = countyName;
+          countySelect.appendChild(opt);
+        });
+        // Add change listener to update towns when county changes
+        countySelect.addEventListener('change', updateTowns);
+      } catch (err) {
+        console.error('Failed to load rents data', err);
+      }
+    }
+
+    // Update the towns dropdown based on selected county
+    function updateTowns() {
+      const countyName = document.getElementById('county').value;
+      const townSelect = document.getElementById('town');
+      townSelect.innerHTML = '';
+      if (!countyName || !rentsData[countyName]) {
+        // Disable the town selector when no county selected
+        townSelect.disabled = true;
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'Select town';
+        townSelect.appendChild(opt);
+        return;
+      }
+      const towns = Object.keys(rentsData[countyName]);
+      // Populate town options
+      townSelect.disabled = false;
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Select town';
+      townSelect.appendChild(placeholder);
+      towns.sort().forEach(town => {
+        const opt = document.createElement('option');
+        opt.value = town;
+        opt.textContent = town;
+        townSelect.appendChild(opt);
+      });
+    }
+
+    // Helper to find baseline rent by town, beds and style
+    function findBaseline(town, beds, style) {
+      // Data structure: county -> town -> beds -> style -> rent
+      // Fallback hierarchy: exact match → town + beds (any style) → county + beds → county + nearest bed → first available
+      for (const countyName in rentsData) {
+        const county = rentsData[countyName];
+        if (county[town]) {
+          const byBed = county[town];
+          if (byBed[beds] && byBed[beds][style]) {
+            return { rent: byBed[beds][style], source: `${town}, ${beds}br, ${style}` };
+          }
+          if (byBed[beds]) {
+            const styles = byBed[beds];
+            const firstStyle = Object.keys(styles)[0];
+            return { rent: styles[firstStyle], source: `${town}, ${beds}br` };
+          }
+          // Nearest bed for this town
+          const bedKeys = Object.keys(byBed).sort((a, b) => Math.abs(a - beds) - Math.abs(b - beds));
+          for (const b of bedKeys) {
+            const styles = byBed[b];
+            const firstStyle = Object.keys(styles)[0];
+            return { rent: styles[firstStyle], source: `${town}, ${b}br (nearest)` };
+          }
+        }
+        // Fallback to county level
+        const byBed = county[beds];
+        if (byBed && byBed[style]) {
+          return { rent: byBed[style], source: `${countyName} county, ${beds}br, ${style}` };
+        }
+        if (byBed) {
+          const firstStyle = Object.keys(byBed)[0];
+          return { rent: byBed[firstStyle], source: `${countyName} county, ${beds}br` };
+        }
+        // nearest bed at county level
+        const bedKeys = Object.keys(county).filter(k => !isNaN(Number(k))).sort((a, b) => Math.abs(a - beds) - Math.abs(b - beds));
+        for (const b of bedKeys) {
+          const styles = county[b];
+          const firstStyle = Object.keys(styles)[0];
+          return { rent: styles[firstStyle], source: `${countyName} county, ${b}br (nearest)` };
+        }
+      }
+      // As a last resort, compute the average rent across all towns for the requested
+      // bedroom count and style. This ensures a value is returned even if the
+      // specific town or county is missing from the data. If the exact style is
+      // not available, we take the first available style for each town.
+      let total = 0;
+      let count = 0;
+      for (const countyName in rentsData) {
+        const county = rentsData[countyName];
+        for (const t in county) {
+          const byBed = county[t];
+          if (byBed[beds] && byBed[beds][style]) {
+            total += byBed[beds][style];
+            count++;
+          } else if (byBed[beds]) {
+            // Use first style if requested style missing
+            const anyStyle = Object.values(byBed[beds])[0];
+            total += anyStyle;
+            count++;
+          }
+        }
+      }
+      if (count > 0) {
+        const avg = total / count;
+        return { rent: avg, source: 'Average across available data' };
+      }
+      return { rent: 0, source: 'No data' };
+    }
+
+    // Apply adjustments to a base rent given selected options
+    function applyAdjustments(baseRent, opts) {
+      let adjusted = baseRent;
+      const breakdown = [];
+      // Add absolute adjustments
+      ['wd', 'parking', 'utilities', 'pets', 'backyard', 'transit', 'basement'].forEach(key => {
+        const addValue = CONFIG.adjustment[key][opts[key]] || 0;
+        if (addValue !== 0) {
+          breakdown.push(`${key} +$${addValue}`);
+        }
+        adjusted += addValue;
+      });
+      // Percentage adjustment
+      const perc = CONFIG.adjustment.renovation[opts.renovation] || 0;
+      if (perc !== 0) {
+        breakdown.push(`renovation +${(perc * 100).toFixed(0)}%`);
+        adjusted *= (1 + perc);
+      }
+      return { adjusted, breakdown };
+    }
+
+    // Compute pro-forma numbers based on rents and expenses
+    function computeProForma(totalRent, investor) {
+      const vacancyLoss = totalRent * (investor.vacancy / 100);
+      const maintenance = totalRent * (investor.maintenance / 100);
+      const management = totalRent * (investor.management / 100);
+      const expenses = (investor.taxes || 0) + (investor.insurance || 0) + (investor.hoa || 0) + maintenance + management + vacancyLoss;
+      const noi = totalRent - expenses;
+      let cap = null;
+      if (investor.price && investor.price > 0) {
+        cap = (noi * 12) / investor.price;
+      }
+      return { vacancyLoss, maintenance, management, expenses, noi, cap };
+    }
+
+    // Handle estimation click
+    function estimateRent() {
+      const county = document.getElementById('county').value;
+      const town = document.getElementById('town').value.trim();
+      const style = document.getElementById('style').value;
+      const units = parseInt(document.getElementById('units').value) || 1;
+      const beds = parseInt(document.getElementById('beds').value) || 0;
+      const baths = parseInt(document.getElementById('baths').value) || 0;
+      const sqft = parseInt(document.getElementById('sqft').value) || 0;
+      const wd = document.getElementById('wd').value;
+      const parking = document.getElementById('parking').value;
+      const utilities = document.getElementById('utilities').value;
+      const renovation = document.getElementById('renovation').value;
+      const pets = document.getElementById('pets').value;
+      const backyard = document.getElementById('backyard').value;
+      const transit = document.getElementById('transit').value;
+      const basement = document.getElementById('basement').value;
+      // Investor fields
+      const price = parseFloat(document.getElementById('price').value) || 0;
+      const taxes = parseFloat(document.getElementById('taxes').value) || 0;
+      const insurance = parseFloat(document.getElementById('insurance').value) || 0;
+      const hoa = parseFloat(document.getElementById('hoa').value) || 0;
+      const vacancy = parseFloat(document.getElementById('vacancy').value) || 0;
+      const maintenance = parseFloat(document.getElementById('maintenance').value) || 0;
+      const management = parseFloat(document.getElementById('management').value) || 0;
+      if (!county || !town || !beds) {
+        alert('Please select a county, town and number of bedrooms.');
+        return;
+      }
+      const { rent: baseRent, source } = findBaseline(town, beds, style);
+      if (baseRent === 0) {
+        alert('No baseline rent found for the selected inputs.');
+        return;
+      }
+      const opts = { wd, parking, utilities, renovation, pets, backyard, transit, basement };
+      const { adjusted, breakdown } = applyAdjustments(baseRent, opts);
+      const low = adjusted * CONFIG.band.low;
+      const high = adjusted * CONFIG.band.high;
+      const resultsEl = document.getElementById('estimateResults');
+      const unitSummary = `<p><strong>Baseline rent:</strong> $${baseRent.toFixed(0)} (${source})</p>
+        <p><strong>Adjustments:</strong> ${breakdown.length ? breakdown.join(', ') : 'none'}</p>
+        <p><strong>Adjusted rent per unit:</strong> $${adjusted.toFixed(0)}</p>
+        <p><strong>Rent range (low/base/high):</strong> $${low.toFixed(0)} / $${adjusted.toFixed(0)} / $${high.toFixed(0)}</p>`;
+      // Total for multi-unit
+      const totalRent = adjusted * units;
+      const totalLow = low * units;
+      const totalHigh = high * units;
+      const totalSummary = units > 1 ? `<p><strong>Total (for ${units} units):</strong> $${totalLow.toFixed(0)} / $${totalRent.toFixed(0)} / $${totalHigh.toFixed(0)}</p>` : '';
+      resultsEl.innerHTML = unitSummary + totalSummary;
+      // Compute pro-forma
+      const pro = computeProForma(totalRent, { price, taxes, insurance, hoa, vacancy, maintenance, management });
+      let proHTML = '<table class="info-table">';
+      proHTML += `<tr><th>Gross monthly rent</th><td>$${totalRent.toFixed(0)}</td></tr>`;
+      proHTML += `<tr><th>Vacancy loss (${vacancy}% )</th><td> -$${pro.vacancyLoss.toFixed(0)}</td></tr>`;
+      proHTML += `<tr><th>Maintenance (${maintenance}% )</th><td> -$${pro.maintenance.toFixed(0)}</td></tr>`;
+      proHTML += `<tr><th>Management (${management}% )</th><td> -$${pro.management.toFixed(0)}</td></tr>`;
+      if (taxes) proHTML += `<tr><th>Taxes</th><td> -$${taxes.toFixed(0)}</td></tr>`;
+      if (insurance) proHTML += `<tr><th>Insurance</th><td> -$${insurance.toFixed(0)}</td></tr>`;
+      if (hoa) proHTML += `<tr><th>HOA</th><td> -$${hoa.toFixed(0)}</td></tr>`;
+      proHTML += `<tr><th><strong>Net Operating Income</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
+      if (pro.cap !== null) {
+        proHTML += `<tr><th><strong>Cap rate</strong></th><td><strong>${(pro.cap * 100).toFixed(2)}%</strong></td></tr>`;
+      }
+      proHTML += '</table>';
+      // Display results
+      document.getElementById('estimateCard').classList.remove('hidden');
+      document.getElementById('proFormaCard').classList.remove('hidden');
+      document.getElementById('whyCard').classList.remove('hidden');
+      resultsEl.scrollIntoView({ behavior: 'smooth' });
+      document.getElementById('proFormaResults').innerHTML = proHTML;
+      // Why details
+      const whyEl = document.getElementById('whyDetails');
+      const whyList = document.createElement('ul');
+      whyList.style.listStyle = 'disc';
+      whyList.style.paddingLeft = '1.5rem';
+      whyList.innerHTML = breakdown.map(item => `<li>${item}</li>`).join('');
+      whyEl.innerHTML = `<p>Baseline source: ${source}</p>`;
+      if (breakdown.length) {
+        whyEl.appendChild(whyList);
+      }
+      // Show save button if user logged in
+      const saveBtn = document.getElementById('saveAnalysis');
+      if (currentUser) {
+        saveBtn.classList.remove('hidden');
+      } else {
+        saveBtn.classList.add('hidden');
+      }
+      // Activate copy summary
+      document.getElementById('copySummary').disabled = false;
+      // Persist current analysis summary for copying
+      window.currentAnalysis = {
+        town, style, units, beds, baths, sqft, opts, baseRent, adjusted, low, high, totalRent, totalLow, totalHigh, pro, breakdown
+      };
+    }
+
+    // Copy summary to clipboard
+    function copySummary() {
+      if (!window.currentAnalysis) return;
+      const { town, style, units, beds, baths, sqft, opts, baseRent, adjusted, low, high, totalRent, totalLow, totalHigh, pro, breakdown } = window.currentAnalysis;
+      let summary = `Rent analysis for ${units} x ${beds}br/${baths}ba ${style} in ${town}\n`;
+      summary += `Baseline rent: $${baseRent.toFixed(0)}\n`;
+      if (breakdown.length) summary += `Adjustments: ${breakdown.join(', ')}\n`;
+      summary += `Adjusted per‑unit rent: $${adjusted.toFixed(0)}\n`;
+      summary += `Rent range (low/base/high): $${low.toFixed(0)} / $${adjusted.toFixed(0)} / $${high.toFixed(0)}\n`;
+      if (units > 1) summary += `Total rent (for ${units} units): $${totalLow.toFixed(0)} / $${totalRent.toFixed(0)} / $${totalHigh.toFixed(0)}\n`;
+      summary += `Gross monthly rent: $${totalRent.toFixed(0)}\n`;
+      summary += `NOI: $${pro.noi.toFixed(0)}\n`;
+      if (pro.cap !== null) summary += `Cap rate: ${(pro.cap * 100).toFixed(2)}%\n`;
+      navigator.clipboard.writeText(summary).then(() => {
+        alert('Summary copied to clipboard!');
+      });
+    }
+
+    // Save analysis to localStorage keyed by user email
+    function saveAnalysis() {
+      if (!currentUser || !window.currentAnalysis) return;
+      const key = 'analyses_' + currentUser.email;
+      const existing = JSON.parse(localStorage.getItem(key) || '[]');
+      const entry = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        summary: window.currentAnalysis
+      };
+      existing.push(entry);
+      localStorage.setItem(key, JSON.stringify(existing));
+      loadSavedAnalyses();
+      alert('Analysis saved!');
+    }
+
+    // Load saved analyses from localStorage for current user
+    function loadSavedAnalyses() {
+      if (!currentUser) return;
+      const key = 'analyses_' + currentUser.email;
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      const container = document.getElementById('analysisList');
+      if (!list.length) {
+        container.innerHTML = '<p>No saved analyses yet.</p>';
+        document.getElementById('savedCard').classList.remove('hidden');
+        return;
+      }
+      const frag = document.createDocumentFragment();
+      list.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+      list.forEach(item => {
+        const div = document.createElement('div');
+        const date = new Date(item.timestamp).toLocaleString();
+        div.style.borderBottom = '1px solid var(--border)';
+        div.style.padding = '0.5rem 0';
+        const title = `${item.summary.units}×${item.summary.beds}br/${item.summary.baths}ba ${item.summary.style} in ${item.summary.town}`;
+        div.innerHTML = `<strong>${title}</strong> – ${date}<br />Rent range: $${item.summary.totalLow.toFixed(0)} / $${item.summary.totalRent.toFixed(0)} / $${item.summary.totalHigh.toFixed(0)}`;
+        frag.appendChild(div);
+      });
+      container.innerHTML = '';
+      container.appendChild(frag);
+      document.getElementById('savedCard').classList.remove('hidden');
+    }
+
+    // Google sign in callback
+    function handleCredentialResponse(response) {
+      // Decode credential (JWT) to extract user info. This does not verify the token; for a production
+      // site you should send it to your backend to verify. Here we simply decode the payload.
+      const decodeJwt = token => {
+        const payload = token.split('.')[1];
+        const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
+        return JSON.parse(decodeURIComponent(escape(json)));
+      };
+      const payload = decodeJwt(response.credential);
+      currentUser = { name: payload.name, email: payload.email, picture: payload.picture };
+      document.getElementById('user-name').textContent = currentUser.name;
+      document.getElementById('user-email').textContent = currentUser.email;
+      document.getElementById('user-info').classList.remove('hidden');
+      document.querySelector('.g_id_signin').classList.add('hidden');
+      loadSavedAnalyses();
+    }
+
+    // Sign out function
+    function signOut() {
+      currentUser = null;
+      document.getElementById('user-info').classList.add('hidden');
+      document.querySelector('.g_id_signin').classList.remove('hidden');
+      document.getElementById('savedCard').classList.add('hidden');
+    }
+
+    // Event listeners
+    window.addEventListener('DOMContentLoaded', () => {
+      loadRents();
+      document.getElementById('estimateBtn').addEventListener('click', estimateRent);
+      document.getElementById('copySummary').addEventListener('click', copySummary);
+      document.getElementById('saveAnalysis').addEventListener('click', saveAnalysis);
+      document.getElementById('signout').addEventListener('click', signOut);
+    });
+  </script>
+</body>
+</html>
