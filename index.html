@@ -150,6 +150,27 @@
     .hidden {
       display: none !important;
     }
+    /* New styling for unit selection buttons */
+    .units-buttons {
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .unit-btn {
+      flex: 1;
+      padding: 0.75rem;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      cursor: pointer;
+      text-align: center;
+    }
+    .unit-btn.selected {
+      /* Slightly darker shade when selected */
+      background: #00449e;
+    }
   </style>
   <!-- Google Identity Services. Replace YOUR_GOOGLE_CLIENT_ID with your own client id
        from the Google Cloud Console (OAuth). Without a valid client ID the sign in
@@ -195,8 +216,19 @@
       </select>
       <!-- Style has been removed in favour of inferring it from the number of units. 1 unit
            is treated as a single‑family home; 2–4 units map to 2‑, 3‑ and 4‑family. -->
-      <label for="units">Number of Units (1&nbsp;=&nbsp;Single‑Family)</label>
-      <input type="number" id="units" min="1" max="4" value="1" />
+      <label for="units">Number of Units</label>
+      <!-- Hidden input storing the numeric units value. This is updated when
+           the user clicks one of the unit buttons below. -->
+      <input type="hidden" id="units" value="1" />
+      <!-- Unit selection buttons. Users can quickly choose single family
+           or multi‑family units by clicking these. The selected button
+           is highlighted via the "selected" class. -->
+      <div id="unitsButtons" class="units-buttons">
+        <button type="button" class="unit-btn selected" data-units="1">Single Family</button>
+        <button type="button" class="unit-btn" data-units="2">2 Units</button>
+        <button type="button" class="unit-btn" data-units="3">3 Units</button>
+        <button type="button" class="unit-btn" data-units="4">4 Units</button>
+      </div>
       <label for="beds">Bedrooms per Unit</label>
       <input type="number" id="beds" min="0" max="10" value="2" />
       <label for="baths">Bathrooms per Unit</label>
@@ -368,6 +400,34 @@
       "Woodcliff Lake", "Wyckoff"
     ];
 
+    // Comprehensive list of Essex County municipalities. This ensures that
+    // towns like Nutley and others absent from the original rents JSON
+    // still appear in the dropdown when Essex is selected.
+    const ESSEX_TOWNS = [
+      "Belleville", "Bloomfield", "Caldwell", "Cedar Grove", "East Orange",
+      "Essex Fells", "Fairfield", "Glen Ridge", "Irvington", "Livingston",
+      "Maplewood", "Millburn", "Montclair", "Newark", "North Caldwell",
+      "Nutley", "Orange", "Roseland", "South Orange", "Verona",
+      "West Caldwell", "West Orange"
+    ];
+
+    // Comprehensive list of Hudson County municipalities. This includes
+    // all 12 municipalities within Hudson County.
+    const HUDSON_TOWNS = [
+      "Bayonne", "East Newark", "Guttenberg", "Harrison", "Hoboken",
+      "Jersey City", "Kearny", "North Bergen", "Secaucus", "Union City",
+      "Weehawken", "West New York"
+    ];
+
+    // Comprehensive list of Passaic County municipalities. All 16
+    // municipalities in Passaic County are represented here.
+    const PASSAIC_TOWNS = [
+      "Bloomingdale", "Clifton", "Haledon", "Hawthorne", "Little Falls",
+      "North Haledon", "Passaic", "Paterson", "Pompton Lakes",
+      "Prospect Park", "Ringwood", "Totowa", "Wanaque", "Wayne",
+      "West Milford", "Woodland Park"
+    ];
+
     // Data loaded from external rents file (county‑level baselines)
     let rentsData = {};
     // Data derived from NJMLS listings. This maps each town directly to
@@ -423,12 +483,21 @@
         townSelect.appendChild(opt);
         return;
       }
-      // Use the full list of Bergen towns if Bergen county is selected, otherwise
-      // derive the list from the rents data. This ensures towns without baseline
-      // entries still appear in the dropdown.
-      const towns = countyName === 'Bergen'
-        ? BERGEN_TOWNS.slice()
-        : Object.keys(rentsData[countyName] || {});
+      // Determine the list of towns for the selected county. Use comprehensive
+      // county lists for Bergen, Essex, Hudson and Passaic so that towns
+      // absent from the original rents JSON still appear (e.g., Nutley in Essex).
+      let towns;
+      if (countyName === 'Bergen') {
+        towns = BERGEN_TOWNS.slice();
+      } else if (countyName === 'Essex') {
+        towns = ESSEX_TOWNS.slice();
+      } else if (countyName === 'Hudson') {
+        towns = HUDSON_TOWNS.slice();
+      } else if (countyName === 'Passaic') {
+        towns = PASSAIC_TOWNS.slice();
+      } else {
+        towns = Object.keys(rentsData[countyName] || {});
+      }
       // Populate town options
       townSelect.disabled = false;
       const placeholder = document.createElement('option');
@@ -554,6 +623,20 @@
         cap = (noi * 12) / investor.price;
       }
       return { vacancyLoss, maintenance, management, expenses, noi, cap };
+    }
+
+    // Initialise the unit selection buttons. When a button is clicked,
+    // update the hidden units input and highlight the selected button.
+    function setupUnitButtons() {
+      const unitsInput = document.getElementById('units');
+      const buttons = document.querySelectorAll('#unitsButtons .unit-btn');
+      buttons.forEach(btn => {
+        btn.addEventListener('click', () => {
+          buttons.forEach(b => b.classList.remove('selected'));
+          btn.classList.add('selected');
+          unitsInput.value = btn.getAttribute('data-units');
+        });
+      });
     }
 
     // Handle estimation click
@@ -803,6 +886,9 @@
           msgEl.textContent = `Thank you! We will reach out to you soon to confirm your consultation on ${date}.`;
         });
       }
+
+      // Set up unit buttons after the DOM has loaded
+      setupUnitButtons();
     });
   </script>
 </body>
