@@ -55,15 +55,17 @@
       margin: 0;
       font-size: 1.5rem;
     }
-    #copySummary {
+    /* Header action buttons */
+    .header-btn {
       padding: 0.5rem 1rem;
       background: var(--primary);
       color: #fff;
       border: none;
       border-radius: var(--radius);
       cursor: pointer;
+      margin-left: 0.5rem;
     }
-    #copySummary:disabled {
+    .header-btn:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
@@ -92,11 +94,14 @@
       flex: 1 1 100%;
     }
     @media (min-width: 900px) {
-      .card.inputs {
-        flex: 1 1 40%;
-      }
-      .card.results {
-        flex: 1 1 55%;
+      /* In the tabbed interface we show only one card at a time, so let
+         each card take the full width to avoid empty space. */
+      .card.inputs,
+      .card.results,
+      #metricsCard,
+      #rentalCard,
+      #dealCard {
+        flex: 1 1 100%;
       }
     }
     .card h2 {
@@ -222,10 +227,10 @@
 <body>
   <header>
     <h1>GCRE North NJ Rent Estimator</h1>
-    <button id="copySummary" disabled>Copy Summary</button>
-    <!-- Dark mode toggle button. Clicking this will toggle the `dark` class
-         on the body element. The text updates based on the current state. -->
-    <button id="darkModeToggle" style="margin-left: 0.5rem;">Dark mode</button>
+    <!-- Header action buttons: connect and dark mode toggle -->
+    <button id="connectHeaderBtn" class="header-btn">Connect with GCRE</button>
+    <button id="copySummary" class="header-btn" style="display:none;">Copy Summary</button>
+    <button id="darkModeToggle" class="header-btn">Light mode</button>
   </header>
   <!-- Hide the Google sign-in UI since we no longer require login -->
   <div id="signin-container" style="display:none;">
@@ -948,6 +953,16 @@
         darkBtn.textContent = isDark ? 'Light mode' : 'Dark mode';
         localStorage.setItem('darkMode', isDark);
       });
+
+      // Header connect button: open the user's mail client to contact GCRE.
+      const connectHeaderBtn = document.getElementById('connectHeaderBtn');
+      if (connectHeaderBtn) {
+        connectHeaderBtn.addEventListener('click', () => {
+          const subject = encodeURIComponent('Rental Tool Inquiry');
+          const body = encodeURIComponent('Hello GCRE,\n\nI would like to connect regarding the rental analysis tool.');
+          window.location.href = `mailto:galncohen@gmail.com?subject=${subject}&body=${body}`;
+        });
+      }
       // Optional field toggle
       const optBtn = document.getElementById('toggleOptional');
       const optFields = document.getElementById('optionalFields');
