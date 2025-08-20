@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <!-- Inform browsers that both light and dark color schemes are supported -->
   <meta name="color-scheme" content="light dark" />
-  <title>North NJ Rent Estimator</title>
+  <title>GCRE North NJ Rent Estimator</title>
   <!-- Inline CSS for a clean, mobile‑first layout. All values are kept here so that the
        page can live as a single file. You can tweak colors, spacing or fonts by
        editing the variables below. -->
@@ -171,6 +171,17 @@
       /* Slightly darker shade when selected */
       background: #00449e;
     }
+
+    /* Header styling incorporating the art deco design provided by the user */
+    /* We overlay a darker gradient on the art‑deco pattern to ensure the title is readable in dark mode. */
+    header {
+      background-image: linear-gradient(rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.8)), url('design.jpg');
+      background-size: cover;
+      background-position: center;
+      color: #d4af37; /* gold tone for contrast on dark pattern */
+      padding: 1rem 0;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+    }
   </style>
   <!-- Google Identity Services. Replace YOUR_GOOGLE_CLIENT_ID with your own client id
        from the Google Cloud Console (OAuth). Without a valid client ID the sign in
@@ -179,7 +190,7 @@
 </head>
 <body>
   <header>
-    <h1>North NJ Rent Estimator</h1>
+    <h1>GCRE North NJ Rent Estimator</h1>
     <button id="copySummary" disabled>Copy Summary</button>
     <!-- Dark mode toggle button. Clicking this will toggle the `dark` class
          on the body element. The text updates based on the current state. -->
@@ -294,9 +305,9 @@
       <div id="investorFields" class="hidden">
         <label for="price">Purchase Price (optional)</label>
         <input type="number" id="price" min="0" step="1000" />
-        <label for="taxes">Taxes (monthly, optional)</label>
+        <label for="taxes">Taxes (annual, optional)</label>
         <input type="number" id="taxes" min="0" step="10" />
-        <label for="insurance">Insurance (monthly, optional)</label>
+        <label for="insurance">Insurance (annual, optional)</label>
         <input type="number" id="insurance" min="0" step="10" />
         <label for="hoa">HOA Fee (monthly, optional)</label>
         <input type="number" id="hoa" min="0" step="10" />
@@ -327,13 +338,13 @@
     </div>
     <!-- Estimate card -->
     <div class="card results hidden" id="estimateCard">
-      <h2>Rent Estimate</h2>
+      <h2>Rental Analysis</h2>
       <div id="estimateResults"></div>
       <!-- Removed save analysis feature since login is no longer required -->
     </div>
     <!-- Pro-Forma card -->
     <div class="card results hidden" id="proFormaCard">
-      <h2>Pro‑Forma</h2>
+      <h2>Investment Metrics</h2>
       <div id="proFormaResults"></div>
     </div>
     <!-- Why card -->
@@ -613,16 +624,21 @@
 
     // Compute pro-forma numbers based on rents and expenses
     function computeProForma(totalRent, investor) {
+      // Convert annual taxes and insurance into monthly values
+      const taxesMonthly = (investor.taxes || 0) / 12;
+      const insuranceMonthly = (investor.insurance || 0) / 12;
+      const hoaMonthly = investor.hoa || 0;
       const vacancyLoss = totalRent * (investor.vacancy / 100);
       const maintenance = totalRent * (investor.maintenance / 100);
       const management = totalRent * (investor.management / 100);
-      const expenses = (investor.taxes || 0) + (investor.insurance || 0) + (investor.hoa || 0) + maintenance + management + vacancyLoss;
+      // Expenses include monthly taxes/insurance, HOA, maintenance, management and vacancy loss
+      const expenses = taxesMonthly + insuranceMonthly + hoaMonthly + maintenance + management + vacancyLoss;
       const noi = totalRent - expenses;
       let cap = null;
       if (investor.price && investor.price > 0) {
         cap = (noi * 12) / investor.price;
       }
-      return { vacancyLoss, maintenance, management, expenses, noi, cap };
+      return { taxesMonthly, insuranceMonthly, hoaMonthly, vacancyLoss, maintenance, management, expenses, noi, cap };
     }
 
     // Initialise the unit selection buttons. When a button is clicked,
@@ -703,10 +719,11 @@
       proHTML += `<tr><th>Vacancy loss (${vacancy}% )</th><td> -$${pro.vacancyLoss.toFixed(0)}</td></tr>`;
       proHTML += `<tr><th>Maintenance (${maintenance}% )</th><td> -$${pro.maintenance.toFixed(0)}</td></tr>`;
       proHTML += `<tr><th>Management (${management}% )</th><td> -$${pro.management.toFixed(0)}</td></tr>`;
-      if (taxes) proHTML += `<tr><th>Taxes</th><td> -$${taxes.toFixed(0)}</td></tr>`;
-      if (insurance) proHTML += `<tr><th>Insurance</th><td> -$${insurance.toFixed(0)}</td></tr>`;
-      if (hoa) proHTML += `<tr><th>HOA</th><td> -$${hoa.toFixed(0)}</td></tr>`;
+      if (taxes) proHTML += `<tr><th>Taxes (monthly)</th><td> -$${pro.taxesMonthly.toFixed(0)}</td></tr>`;
+      if (insurance) proHTML += `<tr><th>Insurance (monthly)</th><td> -$${pro.insuranceMonthly.toFixed(0)}</td></tr>`;
+      if (hoa) proHTML += `<tr><th>HOA (monthly)</th><td> -$${pro.hoaMonthly.toFixed(0)}</td></tr>`;
       proHTML += `<tr><th><strong>Net Operating Income</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
+      proHTML += `<tr><th><strong>Cash flow (monthly)</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
       if (pro.cap !== null) {
         proHTML += `<tr><th><strong>Cap rate</strong></th><td><strong>${(pro.cap * 100).toFixed(2)}%</strong></td></tr>`;
       }
