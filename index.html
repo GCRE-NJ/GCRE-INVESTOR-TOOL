@@ -145,7 +145,9 @@
       text-align: left;
     }
     .info-table th {
-      background: #f1f1f1;
+      /* Use card background so headers remain legible on dark backgrounds. */
+      background: var(--card-bg);
+      color: var(--text);
     }
     .hidden {
       display: none !important;
@@ -170,6 +172,35 @@
     .unit-btn.selected {
       /* Slightly darker shade when selected */
       background: #00449e;
+    }
+
+    /* Styles for the new tab navigation. Tabs sit above the cards and
+       allow the user to switch between base info, deal metrics and
+       rental analysis. Disabled tabs are non-interactive until
+       preconditions are met (e.g. an estimate has been generated). */
+    .tabs {
+      display: flex;
+      gap: 0.5rem;
+      margin: 0 1rem 1rem;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 0.5rem 1rem;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-bottom: 3px solid transparent;
+      border-radius: var(--radius) var(--radius) 0 0;
+      cursor: pointer;
+      color: var(--text);
+      text-align: center;
+    }
+    .tab-btn.active {
+      border-bottom-color: var(--primary);
+      font-weight: bold;
+    }
+    .tab-btn.disabled {
+      opacity: 0.6;
+      pointer-events: none;
     }
 
     /* Header styling incorporating the art deco design provided by the user */
@@ -211,9 +242,17 @@
     </div>
   </div>
   <div class="container">
-    <!-- Input card -->
+    <!-- Tabs navigation -->
+    <div class="tabs">
+      <!-- Tab order: Base Info (inputs), Deal Metrics (investor inputs), Rental Analysis (rent results), Deal Analysis (pro-forma results). -->
+      <button id="tabBase" class="tab-btn active">Base Info</button>
+      <button id="tabMetrics" class="tab-btn disabled">Deal Metrics</button>
+      <button id="tabRental" class="tab-btn disabled">Rental Analysis</button>
+      <button id="tabDeal" class="tab-btn disabled">Deal Analysis</button>
+    </div>
+    <!-- Input card for base info -->
     <div class="card inputs" id="inputsCard">
-      <h2>Inputs</h2>
+      <h2>Base Info</h2>
       <label for="county">County</label>
       <!-- County selector populated from the rents JSON. When a county is selected,
            the towns dropdown will update accordingly. -->
@@ -299,67 +338,69 @@
           <option value="yes">Yes</option>
         </select>
       </div>
-      <!-- Collapsible investor fields. Purchase price and related percentages are optional
-           and hidden until the user chooses to expand this section. -->
-      <button type="button" id="toggleInvestor" class="action">Show Investor Fields</button>
-      <div id="investorFields" class="hidden">
-        <label for="price">Purchase Price (optional)</label>
-        <input type="number" id="price" min="0" step="1000" />
-        <label for="taxes">Taxes (annual, optional)</label>
-        <input type="number" id="taxes" min="0" step="10" />
-        <label for="insurance">Insurance (annual, optional)</label>
-        <input type="number" id="insurance" min="0" step="10" />
-        <label for="hoa">HOA Fee (monthly, optional)</label>
-        <input type="number" id="hoa" min="0" step="10" />
-        <div class="inline">
-          <label for="vacancy" style="flex: 1;">Vacancy&nbsp;%</label>
-          <input type="number" id="vacancy" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
-        </div>
-        <div class="inline">
-          <label for="maintenance" style="flex: 1;">Maintenance&nbsp;%</label>
-          <input type="number" id="maintenance" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
-        </div>
-        <div class="inline">
-          <label for="management" style="flex: 1;">Management&nbsp;%</label>
-          <input type="number" id="management" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
-        </div>
-        <!-- ROI target selection. Users can choose a conservative, target or aggressive
-             return on investment scenario. Selecting the aggressive option will
-             display a disclaimer below. -->
-        <label style="margin-top:0.5rem;">ROI Target</label>
-        <div id="roiOptions" style="margin-bottom:0.5rem;">
-          <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="conservative" checked> Conservative</label>
-          <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="target"> Target</label>
-          <label><input type="radio" name="roiLevel" value="aggressive"> Aggressive</label>
-          <span id="roiDisclaimer" class="hidden" style="display:block;margin-top:0.25rem;font-size:0.8rem;color:var(--text);">Vacancy may be higher with aggressive ROI targets.</span>
-        </div>
+      <!-- Button to generate a rental analysis. Clicking this will compute the baseline
+           rent and enable the other tabs. -->
+      <button id="analysisBtn" class="action">Generate Rental Analysis</button>
+    </div>
+
+    <!-- Metrics card: contains the investor field inputs and calculation button -->
+    <div class="card hidden" id="metricsCard">
+      <h2>Deal Metrics</h2>
+      <label for="price">Purchase Price (optional)</label>
+      <input type="number" id="price" min="0" step="1000" />
+      <label for="taxes">Taxes (annual, optional)</label>
+      <input type="number" id="taxes" min="0" step="10" />
+      <label for="insurance">Insurance (annual, optional)</label>
+      <input type="number" id="insurance" min="0" step="10" />
+      <label for="hoa">HOA Fee (monthly, optional)</label>
+      <input type="number" id="hoa" min="0" step="10" />
+      <div class="inline">
+        <label for="vacancy" style="flex: 1;">Vacancy&nbsp;%</label>
+        <input type="number" id="vacancy" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
       </div>
-      <button id="estimateBtn" class="action">Estimate Rent</button>
+      <div class="inline">
+        <label for="maintenance" style="flex: 1;">Maintenance&nbsp;%</label>
+        <input type="number" id="maintenance" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
+      </div>
+      <div class="inline">
+        <label for="management" style="flex: 1;">Management&nbsp;%</label>
+        <input type="number" id="management" min="0" max="100" step="0.5" value="5" style="width: 5rem;" />
+      </div>
+      <label style="margin-top:0.5rem;">ROI Target</label>
+      <div id="roiOptions" style="margin-bottom:0.5rem;">
+        <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="conservative" checked> Conservative</label>
+        <label style="margin-right:0.5rem;"><input type="radio" name="roiLevel" value="target"> Target</label>
+        <label><input type="radio" name="roiLevel" value="aggressive"> Aggressive</label>
+        <span id="roiDisclaimer" class="hidden" style="display:block;margin-top:0.25rem;font-size:0.8rem;color:var(--text);">Vacancy may be higher with aggressive ROI targets.</span>
+      </div>
+      <!-- Button to calculate deal analysis. After a rental analysis has been generated,
+           clicking this button will compute the pro‑forma numbers and show the Deal
+           Analysis tab. -->
+      <button id="metricsBtn" class="action">Generate Deal Analysis</button>
     </div>
-    <!-- Estimate card -->
-    <div class="card results hidden" id="estimateCard">
+    <!-- Rental analysis card: displays the baseline and adjusted rents. This card
+         appears only after the user generates a rental analysis. -->
+    <div class="card results hidden" id="rentalCard">
       <h2>Rental Analysis</h2>
-      <div id="estimateResults"></div>
-      <!-- Removed save analysis feature since login is no longer required -->
+      <div id="rentalResults"></div>
     </div>
-    <!-- Pro-Forma card -->
-    <div class="card results hidden" id="proFormaCard">
+    <!-- Deal analysis card: displays the pro-forma metrics such as NOI and cap rate.
+         It becomes visible only after the user calculates deal metrics. -->
+    <div class="card results hidden" id="dealCard">
       <h2>Investment Metrics</h2>
-      <div id="proFormaResults"></div>
+      <div id="dealResults"></div>
     </div>
-    <!-- Why card -->
-    <!-- Call to action card replacing the "Why these numbers?" explanation. This section
-         invites the user to schedule a consultation by selecting a date and
-         providing their email. -->
-    <div class="card results hidden" id="ctaCard">
-      <h2>Schedule a Consultation</h2>
-      <p>Please choose a date and provide your email to schedule a consultation.</p>
-      <label for="consultDate">Date</label>
-      <input type="date" id="consultDate" />
-      <label for="consultEmail">Email</label>
-      <input type="email" id="consultEmail" placeholder="you@example.com" />
-      <button id="consultBtn" class="action">Submit</button>
-      <p id="consultMessage" class="note" style="margin-top:0.5rem;"></p>
+    <!-- Connect card -->
+    <!-- This call to action invites the user to connect with the GCRE team. Rather than
+         scheduling a consultation, the user enters their email and clicks
+         connect. This opens their mail client with a message to galncohen@gmail.com. -->
+    <div class="card results hidden" id="connectCard">
+      <h2>Connect with GCRE</h2>
+      <p>Enter your email below and click Connect to reach out to our team.</p>
+      <label for="connectEmail">Your Email</label>
+      <input type="email" id="connectEmail" placeholder="you@example.com" />
+      <button id="connectBtn" class="action">Connect</button>
+      <p id="connectMessage" class="note" style="margin-top:0.5rem;"></p>
     </div>
     <!-- Saved analyses card -->
     <div class="card results hidden" id="savedCard">
@@ -641,6 +682,69 @@
       return { taxesMonthly, insuranceMonthly, hoaMonthly, vacancyLoss, maintenance, management, expenses, noi, cap };
     }
 
+    // Tab management functions. These functions show or hide cards depending on
+    // which tab is selected. They also update the active state on the tab buttons.
+    function showBaseTab() {
+      // Highlight the Base Info tab and show only the inputs card. Hide all
+      // result and investor cards. Reset connect message.
+      const tabs = ['tabBase','tabMetrics','tabRental','tabDeal'];
+      tabs.forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('tabBase').classList.add('active');
+      document.getElementById('inputsCard').classList.remove('hidden');
+      document.getElementById('metricsCard').classList.add('hidden');
+      document.getElementById('rentalCard').classList.add('hidden');
+      document.getElementById('dealCard').classList.add('hidden');
+      document.getElementById('connectCard').classList.add('hidden');
+    }
+
+    function showRentalTab() {
+      // Highlight the Rental Analysis tab and display the rental results card. Hide others.
+      const tabs = ['tabBase','tabMetrics','tabRental','tabDeal'];
+      tabs.forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('tabRental').classList.add('active');
+      document.getElementById('inputsCard').classList.add('hidden');
+      document.getElementById('metricsCard').classList.add('hidden');
+      document.getElementById('rentalCard').classList.remove('hidden');
+      document.getElementById('dealCard').classList.add('hidden');
+      document.getElementById('connectCard').classList.add('hidden');
+    }
+
+    function showMetricsTab() {
+      // Highlight the Deal Metrics tab and display the investor input card. Hide result cards.
+      const tabs = ['tabBase','tabMetrics','tabRental','tabDeal'];
+      tabs.forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('tabMetrics').classList.add('active');
+      document.getElementById('inputsCard').classList.add('hidden');
+      document.getElementById('metricsCard').classList.remove('hidden');
+      document.getElementById('rentalCard').classList.add('hidden');
+      document.getElementById('dealCard').classList.add('hidden');
+      // Hide connect card until results
+      document.getElementById('connectCard').classList.add('hidden');
+    }
+
+    function showDealTab() {
+      // Highlight the Deal Analysis tab and display the deal results card along with connect card.
+      const tabs = ['tabBase','tabMetrics','tabRental','tabDeal'];
+      tabs.forEach(id => document.getElementById(id).classList.remove('active'));
+      document.getElementById('tabDeal').classList.add('active');
+      document.getElementById('inputsCard').classList.add('hidden');
+      document.getElementById('metricsCard').classList.add('hidden');
+      document.getElementById('rentalCard').classList.add('hidden');
+      document.getElementById('dealCard').classList.remove('hidden');
+      document.getElementById('connectCard').classList.remove('hidden');
+    }
+
+    function enableTabsAfterRental() {
+      // After generating a rental analysis, allow access to Rental Analysis and Deal Metrics tabs.
+      document.getElementById('tabMetrics').classList.remove('disabled');
+      document.getElementById('tabRental').classList.remove('disabled');
+    }
+
+    function enableDealTab() {
+      // After generating the deal analysis, enable the Deal Analysis tab.
+      document.getElementById('tabDeal').classList.remove('disabled');
+    }
+
     // Initialise the unit selection buttons. When a button is clicked,
     // update the hidden units input and highlight the selected button.
     function setupUnitButtons() {
@@ -701,7 +805,7 @@
       }
       const low = adjusted * CONFIG.band.low;
       const high = adjusted * CONFIG.band.high;
-      const resultsEl = document.getElementById('estimateResults');
+      const resultsEl = document.getElementById('rentalResults');
       const unitSummary = `<p><strong>Baseline rent:</strong> $${baseRent.toFixed(0)} (${source})</p>
         <p><strong>Adjustments:</strong> ${breakdown.length ? breakdown.join(', ') : 'none'}</p>
         <p><strong>Adjusted rent per unit:</strong> $${adjusted.toFixed(0)}</p>
@@ -712,41 +816,24 @@
       const totalHigh = high * units;
       const totalSummary = units > 1 ? `<p><strong>Total (for ${units} units):</strong> $${totalLow.toFixed(0)} / $${totalRent.toFixed(0)} / $${totalHigh.toFixed(0)}</p>` : '';
       resultsEl.innerHTML = unitSummary + totalSummary;
-      // Compute pro-forma
-      const pro = computeProForma(totalRent, { price, taxes, insurance, hoa, vacancy, maintenance, management });
-      let proHTML = '<table class="info-table">';
-      proHTML += `<tr><th>Gross monthly rent</th><td>$${totalRent.toFixed(0)}</td></tr>`;
-      proHTML += `<tr><th>Vacancy loss (${vacancy}% )</th><td> -$${pro.vacancyLoss.toFixed(0)}</td></tr>`;
-      proHTML += `<tr><th>Maintenance (${maintenance}% )</th><td> -$${pro.maintenance.toFixed(0)}</td></tr>`;
-      proHTML += `<tr><th>Management (${management}% )</th><td> -$${pro.management.toFixed(0)}</td></tr>`;
-      if (taxes) proHTML += `<tr><th>Taxes (monthly)</th><td> -$${pro.taxesMonthly.toFixed(0)}</td></tr>`;
-      if (insurance) proHTML += `<tr><th>Insurance (monthly)</th><td> -$${pro.insuranceMonthly.toFixed(0)}</td></tr>`;
-      if (hoa) proHTML += `<tr><th>HOA (monthly)</th><td> -$${pro.hoaMonthly.toFixed(0)}</td></tr>`;
-      proHTML += `<tr><th><strong>Net Operating Income</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
-      proHTML += `<tr><th><strong>Cash flow (monthly)</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
-      if (pro.cap !== null) {
-        proHTML += `<tr><th><strong>Cap rate</strong></th><td><strong>${(pro.cap * 100).toFixed(2)}%</strong></td></tr>`;
-      }
-      proHTML += '</table>';
-      // Display result cards and scroll to the results. Show the consultation card
-      // instead of the "Why these numbers" explanation.
-      document.getElementById('estimateCard').classList.remove('hidden');
-      document.getElementById('proFormaCard').classList.remove('hidden');
-      document.getElementById('ctaCard').classList.remove('hidden');
+      // Store total rent globally so the metrics tab can compute pro‑forma later.
+      window.lastTotalRent = totalRent;
+      window.lastVacancy = vacancy;
+      window.lastMaintenance = maintenance;
+      window.lastManagement = management;
+      window.lastTaxes = taxes;
+      window.lastInsurance = insurance;
+      window.lastHoa = hoa;
+      // Show only the estimate card on analysis tab. Do not compute pro‑forma here.
+      document.getElementById('rentalCard').classList.remove('hidden');
+      document.getElementById('dealCard').classList.add('hidden');
+      document.getElementById('connectCard').classList.add('hidden');
       resultsEl.scrollIntoView({ behavior: 'smooth' });
-      document.getElementById('proFormaResults').innerHTML = proHTML;
-      // Show save button if user logged in
-      const saveBtn = document.getElementById('saveAnalysis');
-      if (currentUser) {
-        saveBtn.classList.remove('hidden');
-      } else {
-        saveBtn.classList.add('hidden');
-      }
       // Activate copy summary
       document.getElementById('copySummary').disabled = false;
       // Persist current analysis summary for copying
       window.currentAnalysis = {
-        town, style, units, beds, baths, sqft, opts, baseRent, adjusted, low, high, totalRent, totalLow, totalHigh, pro, breakdown
+        town, style, units, beds, baths, sqft, opts, baseRent, adjusted, low, high, totalRent, totalLow, totalHigh, breakdown
       };
     }
 
@@ -761,8 +848,12 @@
       summary += `Rent range (low/base/high): $${low.toFixed(0)} / $${adjusted.toFixed(0)} / $${high.toFixed(0)}\n`;
       if (units > 1) summary += `Total rent (for ${units} units): $${totalLow.toFixed(0)} / $${totalRent.toFixed(0)} / $${totalHigh.toFixed(0)}\n`;
       summary += `Gross monthly rent: $${totalRent.toFixed(0)}\n`;
-      summary += `NOI: $${pro.noi.toFixed(0)}\n`;
-      if (pro.cap !== null) summary += `Cap rate: ${(pro.cap * 100).toFixed(2)}%\n`;
+      // If metrics have been computed, include NOI and cap rate
+      const metrics = window.currentMetrics;
+      if (metrics) {
+        summary += `NOI: $${metrics.noi.toFixed(0)}\n`;
+        if (metrics.cap !== null) summary += `Cap rate: ${(metrics.cap * 100).toFixed(2)}%\n`;
+      }
       navigator.clipboard.writeText(summary).then(() => {
         alert('Summary copied to clipboard!');
       });
@@ -857,20 +948,78 @@
         darkBtn.textContent = isDark ? 'Light mode' : 'Dark mode';
         localStorage.setItem('darkMode', isDark);
       });
-      // Optional/investor field toggles
+      // Optional field toggle
       const optBtn = document.getElementById('toggleOptional');
       const optFields = document.getElementById('optionalFields');
       optBtn.addEventListener('click', () => {
         optFields.classList.toggle('hidden');
         optBtn.textContent = optFields.classList.contains('hidden') ? 'Show Optional Fields' : 'Hide Optional Fields';
       });
-      const invBtn = document.getElementById('toggleInvestor');
-      const invFields = document.getElementById('investorFields');
-      invBtn.addEventListener('click', () => {
-        invFields.classList.toggle('hidden');
-        invBtn.textContent = invFields.classList.contains('hidden') ? 'Show Investor Fields' : 'Hide Investor Fields';
-      });
-      document.getElementById('estimateBtn').addEventListener('click', estimateRent);
+      // Tab buttons: switch between the four tabs. The metrics and analysis tabs
+      // remain disabled until prerequisites are met.
+      const tabBase = document.getElementById('tabBase');
+      const tabMetricsBtn = document.getElementById('tabMetrics');
+      const tabRentalBtn = document.getElementById('tabRental');
+      const tabDealBtn = document.getElementById('tabDeal');
+      tabBase.addEventListener('click', showBaseTab);
+      tabMetricsBtn.addEventListener('click', showMetricsTab);
+      tabRentalBtn.addEventListener('click', showRentalTab);
+      tabDealBtn.addEventListener('click', showDealTab);
+
+      // Hook up the action buttons for analysis and deal analysis
+      const analysisBtn = document.getElementById('analysisBtn');
+      if (analysisBtn) {
+        analysisBtn.addEventListener('click', () => {
+          estimateRent();
+          // Enable Rental Analysis and Deal Metrics tabs and jump to Rental tab
+          enableTabsAfterRental();
+          showRentalTab();
+        });
+      }
+      const metricsBtn = document.getElementById('metricsBtn');
+      if (metricsBtn) {
+        metricsBtn.addEventListener('click', () => {
+          // Ensure we have a previously computed total rent
+          const totalRent = window.lastTotalRent || 0;
+          if (!totalRent) {
+            alert('Please generate a rental analysis first.');
+            return;
+          }
+          // Gather investor inputs
+          const price = parseFloat(document.getElementById('price').value) || 0;
+          const taxesVal = parseFloat(document.getElementById('taxes').value) || 0;
+          const insuranceVal = parseFloat(document.getElementById('insurance').value) || 0;
+          const hoaVal = parseFloat(document.getElementById('hoa').value) || 0;
+          const vacancyVal = parseFloat(document.getElementById('vacancy').value) || 0;
+          const maintenanceVal = parseFloat(document.getElementById('maintenance').value) || 0;
+          const managementVal = parseFloat(document.getElementById('management').value) || 0;
+          const investor = { price: price, taxes: taxesVal, insurance: insuranceVal, hoa: hoaVal, vacancy: vacancyVal, maintenance: maintenanceVal, management: managementVal };
+          const pro = computeProForma(totalRent, investor);
+          let proHTML = '<table class="info-table">';
+          proHTML += `<tr><th>Gross monthly rent</th><td>$${totalRent.toFixed(0)}</td></tr>`;
+          proHTML += `<tr><th>Vacancy loss (${vacancyVal}% )</th><td> -$${pro.vacancyLoss.toFixed(0)}</td></tr>`;
+          proHTML += `<tr><th>Maintenance (${maintenanceVal}% )</th><td> -$${pro.maintenance.toFixed(0)}</td></tr>`;
+          proHTML += `<tr><th>Management (${managementVal}% )</th><td> -$${pro.management.toFixed(0)}</td></tr>`;
+          if (taxesVal) proHTML += `<tr><th>Taxes (monthly)</th><td> -$${pro.taxesMonthly.toFixed(0)}</td></tr>`;
+          if (insuranceVal) proHTML += `<tr><th>Insurance (monthly)</th><td> -$${pro.insuranceMonthly.toFixed(0)}</td></tr>`;
+          if (hoaVal) proHTML += `<tr><th>HOA (monthly)</th><td> -$${pro.hoaMonthly.toFixed(0)}</td></tr>`;
+          proHTML += `<tr><th><strong>Net Operating Income</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
+          proHTML += `<tr><th><strong>Cash flow (monthly)</strong></th><td><strong>$${pro.noi.toFixed(0)}</strong></td></tr>`;
+          if (pro.cap !== null) {
+            proHTML += `<tr><th><strong>Cap rate</strong></th><td><strong>${(pro.cap * 100).toFixed(2)}%</strong></td></tr>`;
+          }
+          proHTML += '</table>';
+          document.getElementById('dealResults').innerHTML = proHTML;
+          // Store metrics globally for copy summary
+          window.currentMetrics = pro;
+          // Show the deal analysis card and connect card
+          document.getElementById('dealCard').classList.remove('hidden');
+          document.getElementById('connectCard').classList.remove('hidden');
+          // Enable the Deal Analysis tab and switch to it
+          enableDealTab();
+          showDealTab();
+        });
+      }
       document.getElementById('copySummary').addEventListener('click', copySummary);
       // Save analysis and sign out handlers are no longer attached because
       // the login feature has been removed.  We leave the functions defined
@@ -889,18 +1038,19 @@
           }
         });
       });
-      // Consultation form submission: validate inputs and display a message.
-      const consultBtn = document.getElementById('consultBtn');
-      if (consultBtn) {
-        consultBtn.addEventListener('click', () => {
-          const date = document.getElementById('consultDate').value;
-          const email = document.getElementById('consultEmail').value.trim();
-          const msgEl = document.getElementById('consultMessage');
-          if (!date || !email) {
-            msgEl.textContent = 'Please select a date and provide your email.';
+      // Connect form submission: handled below
+      const connectBtn = document.getElementById('connectBtn');
+      if (connectBtn) {
+        connectBtn.addEventListener('click', () => {
+          const email = document.getElementById('connectEmail').value.trim();
+          const msgEl = document.getElementById('connectMessage');
+          if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            msgEl.textContent = 'Please enter a valid email address.';
             return;
           }
-          msgEl.textContent = `Thank you! We will reach out to you soon to confirm your consultation on ${date}.`;
+          const subject = encodeURIComponent('Rental Tool Inquiry');
+          const body = encodeURIComponent('From: ' + email + '\n\nI would like to connect with GCRE about the rental analysis tool.');
+          window.location.href = `mailto:galncohen@gmail.com?subject=${subject}&body=${body}`;
         });
       }
 
