@@ -368,8 +368,12 @@
       "Woodcliff Lake", "Wyckoff"
     ];
 
-    // Data loaded from external rents file
+    // Data loaded from external rents file (county‑level baselines)
     let rentsData = {};
+    // Data derived from NJMLS listings. This maps each town directly to
+    // median rents by style and bedroom count. It is loaded once the page
+    // initializes and used as the primary baseline when available.
+    let mlsData = {};
     // Current user info
     let currentUser = null;
 
@@ -378,6 +382,17 @@
       try {
         const response = await fetch('data/rents-north-nj.json');
         rentsData = await response.json();
+        // Load the MLS‑derived baselines. If the fetch fails for any reason
+        // (for example the file is missing), the tool will continue using
+        // only the county‑level baselines.
+        try {
+          const mlsResp = await fetch('data/rents-njmls.json');
+          if (mlsResp.ok) {
+            mlsData = await mlsResp.json();
+          }
+        } catch (e) {
+          console.warn('Unable to load MLS data; falling back to county baselines', e);
+        }
         // Populate county options
         const countySelect = document.getElementById('county');
         countySelect.innerHTML = '<option value="">Select county</option>';
@@ -430,8 +445,18 @@
 
     // Helper to find baseline rent by town, beds and style
     function findBaseline(town, beds, style) {
-      // Data structure: county -> town -> beds -> style -> rent
-      // Fallback hierarchy: exact match → town + beds (any style) → county + beds → county + nearest bed → first available
+      // First look in the MLS‑derived dataset. This provides median
+      // rents for each town without requiring a county selection. The keys
+      // are town names; within each town, style and bedroom count keys
+      // exist if there were sufficient listings. Because bedrooms are stored
+      // as numbers in the JSON, convert the beds argument to string when
+      // looking up. If no direct match is found, fall back to the county
+      // baselines loaded from rentsData.
+      const b = beds;
+      if (mlsData && mlsData[town] && mlsData[town][style] && mlsData[town][style][b]) {
+        return { rent: mlsData[town][style][b], source: `${town}, ${beds}br, ${style} (MLS)` };
+      }
+      // Fallback to county‑level baselines as before
       for (const countyName in rentsData) {
         const county = rentsData[countyName];
         if (county[town]) {
@@ -446,33 +471,33 @@
           }
           // Nearest bed for this town
           const bedKeys = Object.keys(byBed).sort((a, b) => Math.abs(a - beds) - Math.abs(b - beds));
-          for (const b of bedKeys) {
-            const styles = byBed[b];
+          for (const k of bedKeys) {
+            const styles = byBed[k];
             const firstStyle = Object.keys(styles)[0];
-            return { rent: styles[firstStyle], source: `${town}, ${b}br (nearest)` };
+            return { rent: styles[firstStyle], source: `${town}, ${k}br (nearest)` };
           }
         }
         // Fallback to county level
-        const byBed = county[beds];
-        if (byBed && byBed[style]) {
-          return { rent: byBed[style], source: `${countyName} county, ${beds}br, ${style}` };
+        const byBedCounty = county[beds];
+        if (byBedCounty && byBedCounty[style]) {
+          return { rent: byBedCounty[style], source: `${countyName} county, ${beds}br, ${style}` };
         }
-        if (byBed) {
-          const firstStyle = Object.keys(byBed)[0];
-          return { rent: byBed[firstStyle], source: `${countyName} county, ${beds}br` };
+        if (byBedCounty) {
+          const firstStyle = Object.keys(byBedCounty)[0];
+          return { rent: byBedCounty[firstStyle], source: `${countyName} county, ${beds}br` };
         }
         // nearest bed at county level
-        const bedKeys = Object.keys(county).filter(k => !isNaN(Number(k))).sort((a, b) => Math.abs(a - beds) - Math.abs(b - beds));
-        for (const b of bedKeys) {
-          const styles = county[b];
+        const bedKeysCounty = Object.keys(county).filter(k => !isNaN(Number(k))).sort((a, b) => Math.abs(a - beds) - Math.abs(b - beds));
+        for (const k of bedKeysCounty) {
+          const styles = county[k];
           const firstStyle = Object.keys(styles)[0];
-          return { rent: styles[firstStyle], source: `${countyName} county, ${b}br (nearest)` };
+          return { rent: styles[firstStyle], source: `${countyName} county, ${k}br (nearest)` };
         }
       }
       // As a last resort, compute the average rent across all towns for the requested
-      // bedroom count and style. This ensures a value is returned even if the
-      // specific town or county is missing from the data. If the exact style is
-      // not available, we take the first available style for each town.
+      // bedroom count and style. If the exact style is not available, we take the
+      // first available style for each town. This maintains backwards compatibility
+      // with the previous logic.
       let total = 0;
       let count = 0;
       for (const countyName in rentsData) {
@@ -483,7 +508,6 @@
             total += byBed[beds][style];
             count++;
           } else if (byBed[beds]) {
-            // Use first style if requested style missing
             const anyStyle = Object.values(byBed[beds])[0];
             total += anyStyle;
             count++;
